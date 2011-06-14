@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Motorbike Gauges</title>
+<script type="text/javascript" src="gauge.js"></script>
+<script type="text/javascript">
+function init() {
+	JSInterface.initCompleted(); // callback Java
+}
+
+function initSpeedometer(width, height) {
+	var my_gauge = gauge.add(document.getElementById('speedometer'));
+	if(typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
+	gauge.add($('speedometer'));
+	gauge.add($('speedometer'), {width: width, height: height, name:'my_gauge', values:[0,0,100]});
+	gauge.modify($('my_gauge'), {colors:['#00ff00','#ff0000', '#000000']});
+	setSpeed(0,0,0);
+	JSInterface.doEchoTest('Initialized!');	
+}
+
+function setSpeed(value1, value2, value3) {
+	gauge.modify(document.getElementById('my_gauge'), {name:'my_gauge', values:[value1,value2,value3]});
+	var e = document.getElementById('speedometerText');
+	e.innerHTML = '<b>Speed: ' + value1 + ' km/h</b>';
+}
+</script>
+</head>
+<body onLoad="init()">
+<div id="speedometer">
+</div>
+<div id="speedometerText">
+</div>
+</body>
+</html>
