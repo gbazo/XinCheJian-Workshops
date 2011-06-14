@@ -1,9 +1,9 @@
 package com.xinchejian.android.tutorials;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.SoundPool;
-import android.media.SoundPool.OnLoadCompleteListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,6 +12,11 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 public class MP3BackgroundPlayActivity extends Activity {
+	private static final float MINIMAL_SOUND_VOLUME_PERCENTAGE = 70.0f;
+	private String TAG = MP3BackgroundPlayActivity.class.getCanonicalName();
+	public static int VERY_BAD_IDEA = 0;
+	private static final int NUMBER_OF_SIMULTANEOUS_STREAMS = 1; // we just play one at a time, any play over will replace the previous stream
+	private static final int NOT_LOADED_YET = -1;
 	private static final int SOUND_POOL_SUCCESS = 0;
 	private static final int PLAYBACK_RATE = 1;
 	private static final int LOOP_FOREVER = -1;
@@ -19,14 +24,13 @@ public class MP3BackgroundPlayActivity extends Activity {
 	//http://www.partnersinrhyme.com/soundfx/car_sounds/car_motorcycle-idling_wav.shtml
 	protected static final int PRIORITY = 0;
 	private Button playButton;
-	private SoundPool soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
-	private int idleSoundId = -1;
-	private int cruiseSoundId = -1;
-	private int up2SpeedSoundId = -1;
-	private int streamId = -1;
+	private SoundPool soundPool = new SoundPool(NUMBER_OF_SIMULTANEOUS_STREAMS, AudioManager.STREAM_MUSIC, 0);
+	private int idleSoundId = NOT_LOADED_YET;
+	private int cruiseSoundId = NOT_LOADED_YET;
+	private int up2SpeedSoundId = NOT_LOADED_YET;
+	private int streamId = NOT_LOADED_YET;
 	private SeekBar motorControl;
 	private int lastSpeed;
-	private String TAG = MP3BackgroundPlayActivity.class.getCanonicalName();
 	private boolean accelerating;
 
 
@@ -35,18 +39,21 @@ public class MP3BackgroundPlayActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		soundPool.setOnLoadCompleteListener(new OnLoadCompleteListener() {
+		
+		soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
 			public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
 				if(status != SOUND_POOL_SUCCESS) {
 					notifyUser("Load of " + sampleId + " failed");
 					return;
 				}
-				if(idleSoundId != -1 && cruiseSoundId != 1 && up2SpeedSoundId != -1) {
+				// wait until all clips are loaded to enable play button
+				if(idleSoundId != NOT_LOADED_YET && cruiseSoundId != NOT_LOADED_YET && up2SpeedSoundId != NOT_LOADED_YET) {
 					playButton.setEnabled(true);
 					playButton.setText("Press to play");
 				}
 			}});
-		idleSoundId = soundPool.load(this, R.raw.idle, 1);
+		// this happens asynchronously; for every clip, onLoadComplete is called
+		idleSoundId = soundPool.load(this, R.raw.idle, 1); // folder raw manually created in res/
 		cruiseSoundId = soundPool.load(this, R.raw.cruisen, 1);
 		up2SpeedSoundId = soundPool.load(this, R.raw.up2speed, 1);
 
@@ -56,16 +63,17 @@ public class MP3BackgroundPlayActivity extends Activity {
 		playButton.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
 				synchronized(soundPool) { // it's possible to get multiple clicks... make sure we process one at a time
-					if(streamId == -1) {
+					if(streamId == NOT_LOADED_YET) {
 						// there was no stream playing so start playing
 						playButton.setText("Playing, click to stop");
-						play(idleSoundId);
+						playIdleOrCruise();
 						motorControl.setEnabled(true);					
 					// stream was playing so we to stop it
 					} else {
+						// something was playing, stop
 						motorControl.setEnabled(false);	
 						soundPool.stop(streamId);
-						streamId = -1;
+						streamId = NOT_LOADED_YET;
 						playButton.setText("Start playing");
 					}
 				}
@@ -74,57 +82,62 @@ public class MP3BackgroundPlayActivity extends Activity {
 		motorControl = (SeekBar) findViewById(R.id.motoControl);
 		motorControl.setEnabled(false);
 		motorControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-			public void onStopTrackingTouch(SeekBar seekBar) {
-				accelerating = false;
-				if(lastSpeed == 0) {
-					play(idleSoundId);			
-				} else {
-					play(cruiseSoundId);
-				}
-			}
-
+			// the user is starting to drag the scrollbar
 			public void onStartTrackingTouch(SeekBar seekBar) {
+				// TODO: don't need this boolean
 				if(!accelerating) {
-					play(up2SpeedSoundId);
+					play(up2SpeedSoundId); // accelerating
 					accelerating = true;
 				}
 			}
 
+			// for every advance on the scrollbar
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
 				lastSpeed = progress;
 				float volume = calcVolume();
 				soundPool.setVolume(streamId, volume, volume);
+				
+			}
 
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				accelerating = false;
+				playIdleOrCruise(); // we've reached our desired speed
 			}
 		});
 	}
 	
-	private void play(int clip) {
+	private void play(int soundId) {
 		// max simultaneous sound is one
-		Log.d(TAG , "Playing " + clip);
+		Log.d(TAG , "Playing " + soundId);
 		float volume;
-		if(idleSoundId == clip) {
-			volume = 0.5f;
+		if(idleSoundId == soundId) {
+			volume = MINIMAL_SOUND_VOLUME_PERCENTAGE/100.0f;
 		} else {
-			volume = calcVolume();
+			volume = calcVolume(); // volume at least 0.5f
 			
 		}
 		synchronized(soundPool) {
-			streamId = soundPool.play(clip, volume, volume, PRIORITY, LOOP_FOREVER, PLAYBACK_RATE);
+			streamId = soundPool.play(soundId, volume, volume, PRIORITY, LOOP_FOREVER, PLAYBACK_RATE);
 		}
 	}
 
 	private float calcVolume() {
 		float volume;
-		volume = ((float)lastSpeed)/100.0f;
+		volume = ((float)lastSpeed)/MINIMAL_SOUND_VOLUME_PERCENTAGE + MINIMAL_SOUND_VOLUME_PERCENTAGE;
 		if(volume > 1.0f) {
 			volume = 1.0f;
 		}
 		return volume;
 	}
 	
+	private void playIdleOrCruise() {
+		if(lastSpeed == 0) {
+			play(idleSoundId);			
+		} else {
+			play(cruiseSoundId);
+		}
+	}
 	protected void notifyUser(String string) {
 		Toast.makeText(this, string, Toast.LENGTH_LONG).show();
 	}
