@@ -1,7 +1,6 @@
 package com.xinchejian.android.tutorials;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
@@ -12,9 +11,8 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 public class SoundBackgroundPlayActivity extends Activity {
-	private static final float MINIMAL_SOUND_VOLUME_PERCENTAGE = 70.0f;
 	private String TAG = SoundBackgroundPlayActivity.class.getCanonicalName();
-	public static int VERY_BAD_IDEA = 0;
+	private static final float MINIMAL_SOUND_VOLUME_PERCENTAGE = 70.0f;
 	private static final int NUMBER_OF_SIMULTANEOUS_STREAMS = 1; // we just play one at a time, any play over will replace the previous stream
 	private static final int NOT_LOADED_YET = -1;
 	private static final int SOUND_POOL_SUCCESS = 0;
