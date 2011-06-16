@@ -141,6 +141,8 @@ public class ServoControlActivity extends Activity {
 		// startService
 		Intent intent = new Intent(this, BluetoothService.class);
 		intent.putExtra("UUID", arduinoAddress);
+		//we start the service with the intent to make sure that it always
+		//runs in the background even if we unbind from the service.
 		ComponentName componentName = startService(intent);
 		if (componentName == null) {
 			Toast.makeText(this, "Could not connect to service",

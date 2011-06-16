@@ -23,6 +23,8 @@ public class Bluetooth {
 	private BluetoothAdapter mBluetoothAdapter = null;
 	private OutputStream outStream = null;
 
+	private long lastPingMs;
+
 	public Bluetooth(String address) {
 		this.address = address;
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -107,11 +109,16 @@ public class Bluetooth {
 		return outStream != null;
 	}
 	
-	public synchronized boolean ping() {
+	public synchronized boolean ping(int ping_interval) {
 		if(outStream == null) {
 			Log.d(TAG, "OutStream does not exist yet");
 			return false;
 		}
+		if((System.currentTimeMillis() - lastPingMs) < ping_interval) {
+			// assuming ping still fresh
+			return true;
+		}
+		lastPingMs = System.currentTimeMillis();
 		final byte[] b = {'i','g','n','o','r','e','\n'};
 		try {
 			outStream.write(b);
