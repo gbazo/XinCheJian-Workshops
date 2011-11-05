@@ -2,7 +2,7 @@ equations.html contains MathML-editable content with the list of equations given
 
 equations.odt same equations with more explanation (pretty sparse right now). Copy-paste of equations as images from MathCast.
 
-*.m Octave (a cross-platform MathLab clone) programs. You run this by downloading, installing Octave and running the interpreter. Once running, cd to the directory where you've checked out these program and execute them by calling the name of the file (without extension).
+.m Octave (a cross-platform MathLab clone) programs. You run this by downloading, installing Octave and running the interpreter. Once running, cd to the directory where you've checked out these program and execute them by calling the name of the file (without extension).
 
-octave-3.2.4.exe:17> cd c:\users\rngadam\XinCheJian\Workshops\AI
-octave-3.2.4.exe:19> homework3_2
+    octave-3.2.4.exe:17> cd c:\users\rngadam\XinCheJian\Workshops\AI
+    octave-3.2.4.exe:19> homework3_2
