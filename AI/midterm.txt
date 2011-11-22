@@ -18,6 +18,13 @@ f = g + h
 
 21, 18(23, 29), 17(), 16(25,40), 20#5(20#6())
 
+h(s) <= TRUE COST
+
+we have three h values to path:
+
+h=6 <= 20 (two steps away)
+h=20 > 10 (one step away!) -> overestimates!
+h=10 <= 20 (one step away)
 
 = QUESTION 3 =
 
